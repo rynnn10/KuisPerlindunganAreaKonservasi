@@ -299,12 +299,13 @@
       const savedName = localStorage.getItem('quizUserName');
       if (savedName) {
         modalOverlay.classList.add('hidden');
-        resumeQuizIfAny(); // Jalankan fungsi resume jika pernah ada state
+        resumeQuizIfAny();
       } else {
         nameModal.classList.remove('hidden');
       }
     }
 
+    // Simpan Nama Saat Memulai
     function submitName(event) {
       event.preventDefault();
       const nameInput = document.getElementById('user-name-input').value.trim();
@@ -330,12 +331,30 @@
       localStorage.setItem('quizUserName', name);
       modalOverlay.classList.add('hidden');
       showUserBadge(name);
-      resumeQuizIfAny(); // Resume kuis setelah input nama
+      resumeQuizIfAny();
     }
 
     function showUserBadge(name) {
       userBadge.classList.remove('hidden');
       displayUserName.innerText = `Halo, ${name}`;
+    }
+
+    // Simpan Score Saat Selesai Kuis
+    function submitScoreToDatabase(finalScore) {
+      const savedName = localStorage.getItem('quizUserName');
+      if (!savedName) return;
+
+      const formData = new URLSearchParams();
+      formData.append('nama', savedName);
+      formData.append('tanggal', new Date().toLocaleString('id-ID'));
+      formData.append('score', finalScore);
+
+      // Fetch ke Apps Script di Background
+      fetch(APPS_SCRIPT_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: formData.toString()
+      }).catch(error => console.error("Error saving score:", error));
     }
 
     // ==========================================
@@ -355,7 +374,6 @@
       if (savedState) {
         const parsedState = JSON.parse(savedState);
 
-        // Pastikan ada jawaban yang sudah diisi agar tidak resume ke soal 1 tanpa alasan
         const hasStarted = parsedState.userAnswers.some(ans => ans !== null);
 
         if (hasStarted && parsedState.currentQuestion < quizData.length) {
@@ -365,7 +383,6 @@
 
           scoreDisplay.innerText = score;
 
-          // Langsung pindah ke layar kuis tanpa lewat layar start
           startScreen.classList.add('hidden');
           quizScreen.classList.remove('hidden');
           quizScreen.classList.add('flex');
@@ -376,7 +393,7 @@
     }
 
     // ==========================================
-    // DATA KUIS (100 SOAL TETAP SAMA)
+    // DATA KUIS (100 SOAL)
     // ==========================================
     const quizData = [
       // --- 50 SOAL ORIGINAL (DENGAN PEMBAHASAN) ---
@@ -511,7 +528,7 @@
       userAnswers.fill(null);
       scoreDisplay.innerText = score;
 
-      saveQuizState(); // Simpan state bersih awal
+      saveQuizState();
       loadQuestion();
     }
 
@@ -623,7 +640,7 @@
         scoreDisplay.innerText = score;
       }
 
-      saveQuizState(); // Simpan progress setelah menjawab
+      saveQuizState();
       loadQuestion();
 
       setTimeout(() => {
@@ -634,7 +651,7 @@
     function nextQuestion() {
       if (currentQuestion < quizData.length - 1) {
         currentQuestion++;
-        saveQuizState(); // Simpan halaman / state
+        saveQuizState();
         loadQuestion();
       } else {
         showResult();
@@ -644,7 +661,7 @@
     function prevQuestion() {
       if (currentQuestion > 0) {
         currentQuestion--;
-        saveQuizState(); // Simpan halaman / state
+        saveQuizState();
         loadQuestion();
       }
     }
@@ -678,7 +695,10 @@
         feedbackEl.className = "mt-4 text-lg font-bold text-red-500";
       }
 
-      // Hapus progress save jika sudah selesai untuk mencegah loop aneh
+      // PANGGIL FUNGSI KIRIM SKOR KE GOOGLE SPREADSHEET
+      submitScoreToDatabase(score);
+
+      // Hapus progress save agar bisa mengulang kuis bersih kembali
       localStorage.removeItem('quizSavedState');
     }
 
