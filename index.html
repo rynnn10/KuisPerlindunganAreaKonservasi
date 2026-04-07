@@ -1,0 +1,695 @@
+<!DOCTYPE html>
+<html lang="id">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Kuis Perlindungan Areal Konservasi</title>
+  <link rel="icon" href="https://cdn-icons-png.flaticon.com/512/291/291206.png" type="image/png">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+  <style>
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    .fade-in {
+      animation: fadeIn 0.4s ease-in-out;
+    }
+
+    @keyframes fadeIn {
+      from {
+        opacity: 0;
+        transform: translateY(10px);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .slide-in {
+      animation: slideIn 0.3s ease-out forwards;
+    }
+
+    @keyframes slideIn {
+      from {
+        opacity: 0;
+        transform: translateY(-10px);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .option-btn {
+      transition: all 0.2s ease;
+    }
+
+    .option-btn:disabled {
+      cursor: default;
+    }
+
+    .option-correct {
+      background-color: #10b981 !important;
+      /* emerald-500 */
+      border-color: #059669 !important;
+      /* emerald-600 */
+      color: white !important;
+    }
+
+    .option-wrong {
+      background-color: #ef4444 !important;
+      /* red-500 */
+      border-color: #dc2626 !important;
+      /* red-600 */
+      color: white !important;
+    }
+
+    .option-reveal {
+      background-color: #d1fae5 !important;
+      /* emerald-100 */
+      border-color: #10b981 !important;
+      /* emerald-500 */
+      color: #065f46 !important;
+      /* emerald-800 */
+    }
+
+    ::-webkit-scrollbar {
+      width: 6px;
+    }
+
+    ::-webkit-scrollbar-track {
+      background: #f1f1f1;
+    }
+
+    ::-webkit-scrollbar-thumb {
+      background: #10b981;
+      border-radius: 10px;
+    }
+  </style>
+</head>
+
+<body
+  class="bg-gradient-to-br from-emerald-600 to-green-900 min-h-screen text-gray-800 flex items-center justify-center p-2 md:p-4">
+
+  <!-- USER BADGE (Kiri Atas) -->
+  <div id="user-badge"
+    class="hidden fixed top-3 left-3 md:top-5 md:left-5 z-40 bg-white/95 backdrop-blur-sm shadow-lg border border-emerald-100 px-4 py-2 rounded-full flex items-center gap-2 fade-in">
+    <i class="fas fa-user-circle text-emerald-600 text-lg md:text-xl"></i>
+    <span id="display-user-name" class="font-bold text-gray-700 text-sm md:text-base">Halo, -</span>
+  </div>
+
+  <!-- MODAL OVERLAY (Untuk Pop-Up) -->
+  <div id="modal-overlay" class="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+
+    <!-- POP-UP 1: INFORMASI -->
+    <div id="info-modal"
+      class="bg-white rounded-2xl shadow-2xl max-w-md w-full overflow-hidden transform transition-all fade-in">
+      <div class="bg-emerald-600 p-6 text-center text-white">
+        <i class="fas fa-info-circle text-4xl mb-3"></i>
+        <h2 class="text-2xl font-bold">Informasi Kuis</h2>
+      </div>
+      <div class="p-6">
+        <div class="space-y-4 text-sm md:text-base text-gray-600">
+          <p><strong><i class="fas fa-gamepad text-emerald-500 w-5"></i> Cara Bermain:</strong> Anda akan diberikan 100
+            soal pilihan ganda. Setelah memilih, Anda langsung dapat melihat pembahasan dari jawaban tersebut. Terdapat
+            tombol "Sebelumnya" jika Anda ingin membaca ulang soal/pembahasan masa lalu.</p>
+          <p><strong><i class="fas fa-book text-emerald-500 w-5"></i> Referensi Soal:</strong> Seluruh soal diekstrak
+            langsung dari Modul PDF materi <i>"Perlindungan Areal Konservasi"</i>, mencakup definisi Konservasi,
+            NKT/HCV, hingga status satwa IUCN.</p>
+          <p><strong><i class="fas fa-user-edit text-emerald-500 w-5"></i> Pembuat:</strong> Riyan (Dibuat pada Tahun
+            2026).</p>
+        </div>
+        <button onclick="continueFromInfo()"
+          class="mt-6 w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 rounded-xl shadow-md transition-all active:scale-95 flex justify-center items-center gap-2">
+          Lanjutkan <i class="fas fa-chevron-right"></i>
+        </button>
+      </div>
+    </div>
+
+    <!-- POP-UP 2: INPUT NAMA -->
+    <div id="name-modal"
+      class="hidden bg-white rounded-2xl shadow-2xl max-w-md w-full overflow-hidden transform transition-all fade-in">
+      <div class="bg-emerald-600 p-6 text-center text-white">
+        <i class="fas fa-user-astronaut text-4xl mb-3"></i>
+        <h2 class="text-2xl font-bold">Siapa Nama Anda?</h2>
+        <p class="text-emerald-100 mt-1 text-sm">Nama akan disimpan untuk database riwayat kuis</p>
+      </div>
+      <div class="p-6">
+        <form id="name-form" onsubmit="submitName(event)">
+          <div class="mb-5">
+            <label class="block text-gray-700 text-sm font-bold mb-2" for="user-name-input">
+              Nama Lengkap / Panggilan
+            </label>
+            <input type="text" id="user-name-input" placeholder="Masukkan nama Anda..." required
+              class="w-full px-4 py-3 rounded-xl border-2 border-gray-300 focus:border-emerald-500 focus:outline-none transition-colors text-gray-800">
+          </div>
+          <button type="submit" id="submit-name-btn"
+            class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 rounded-xl shadow-md transition-all active:scale-95 flex justify-center items-center gap-2">
+            <span>Mulai Kuis</span> <i class="fas fa-play"></i>
+          </button>
+        </form>
+        <!-- Loading State (Sembunyi) -->
+        <div id="loading-state" class="hidden text-center py-4">
+          <i class="fas fa-spinner fa-spin text-3xl text-emerald-500 mb-2"></i>
+          <p class="text-gray-500 text-sm">Menyimpan data Anda...</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Container Utama Kuis -->
+  <div class="max-w-3xl w-full bg-white rounded-3xl shadow-2xl overflow-hidden relative fade-in" id="app-container">
+
+    <!-- START SCREEN -->
+    <div id="start-screen" class="p-6 md:p-10 text-center flex flex-col items-center justify-center min-h-[400px]">
+      <div
+        class="w-24 h-24 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center text-4xl mb-6 shadow-inner">
+        <i class="fas fa-leaf"></i>
+      </div>
+      <h1 class="text-3xl md:text-4xl font-bold text-gray-800 mb-4">Kuis Konservasi Pro</h1>
+      <p class="text-gray-500 mb-8 max-w-md">Uji pengetahuan Anda mengenai Perlindungan Areal Konservasi, HCV (Nilai
+        Konservasi Tinggi), dan Ekologi. Dilengkapi dengan pembahasan lengkap!</p>
+      <div
+        class="bg-blue-50 text-blue-700 px-4 py-3 rounded-xl mb-8 text-sm font-medium w-full max-w-xs flex justify-center gap-3">
+        <span><i class="fas fa-list-ol"></i> 100 Soal</span>
+        <span>|</span>
+        <span><i class="fas fa-book-open"></i> +Pembahasan</span>
+      </div>
+      <button onclick="startQuiz()"
+        class="w-full max-w-xs bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-4 rounded-xl shadow-lg transform transition active:scale-95 text-lg">
+        Mulai Kuis Sekarang
+      </button>
+    </div>
+
+    <!-- QUIZ SCREEN -->
+    <div id="quiz-screen" class="hidden flex-col h-full">
+      <!-- Header Progress -->
+      <div class="bg-emerald-50 p-4 md:p-6 border-b border-emerald-100">
+        <div class="flex justify-between items-center mb-3">
+          <span class="text-emerald-700 font-bold text-sm md:text-base bg-emerald-200 px-3 py-1 rounded-full"
+            id="question-counter">Soal 1 / 100</span>
+          <span class="text-gray-600 font-semibold text-sm md:text-base"><i class="fas fa-star text-yellow-500"></i>
+            Skor: <span id="score-display">0</span></span>
+        </div>
+        <div class="w-full bg-gray-200 rounded-full h-2.5 shadow-inner">
+          <div id="progress-bar" class="bg-emerald-500 h-2.5 rounded-full transition-all duration-300"
+            style="width: 0%"></div>
+        </div>
+      </div>
+
+      <!-- Question Body -->
+      <div class="p-4 md:p-8 flex-grow overflow-y-auto max-h-[60vh] md:max-h-[70vh]" id="quiz-scroll-area">
+        <h2 id="question-text" class="text-lg md:text-xl font-semibold text-gray-800 mb-6 leading-relaxed">
+          Pertanyaan akan muncul di sini?
+        </h2>
+
+        <!-- Options -->
+        <div id="options-container" class="space-y-3 mb-6">
+          <!-- Options injected via JS -->
+        </div>
+
+        <!-- Explanation Box -->
+        <div id="explanation-box" class="hidden bg-blue-50 border-l-4 border-blue-500 p-4 rounded-r-xl mt-4 slide-in">
+          <div class="flex items-start gap-3">
+            <i class="fas fa-info-circle text-blue-500 mt-1"></i>
+            <div>
+              <h4 class="font-bold text-blue-800 text-sm mb-1">Pembahasan:</h4>
+              <p id="explanation-text" class="text-blue-900 text-sm md:text-base leading-relaxed"></p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Footer Buttons -->
+      <div class="p-4 border-t border-gray-100 bg-gray-50 flex justify-between gap-3">
+        <button id="prev-btn" onclick="prevQuestion()"
+          class="hidden bg-white border-2 border-gray-300 text-gray-600 hover:bg-gray-100 font-bold py-3 px-6 rounded-xl transition-all text-sm md:text-base items-center gap-2">
+          <i class="fas fa-arrow-left"></i> <span class="hidden sm:inline">Sebelumnya</span>
+        </button>
+        <button id="next-btn" onclick="nextQuestion()" disabled
+          class="ml-auto bg-gray-300 text-gray-500 font-bold py-3 px-6 rounded-xl transition-all cursor-not-allowed text-sm md:text-base flex items-center gap-2">
+          <span>Selanjutnya</span> <i class="fas fa-arrow-right"></i>
+        </button>
+      </div>
+    </div>
+
+    <!-- RESULT SCREEN -->
+    <div id="result-screen"
+      class="hidden p-8 text-center flex flex-col items-center justify-center min-h-[500px] fade-in">
+      <img src="https://cdn-icons-png.flaticon.com/512/1055/1055183.png" alt="Trophy" class="w-32 h-32 mb-6"
+        onerror="this.style.display='none';">
+      <h2 class="text-3xl font-bold text-gray-800 mb-2">Kuis Selesai!</h2>
+      <p class="text-gray-500 mb-8">Terima kasih telah menyelesaikan Kuis Konservasi Pro.</p>
+
+      <div class="bg-emerald-50 rounded-2xl p-6 w-full max-w-sm mb-8 shadow-sm border border-emerald-100">
+        <div class="text-sm text-emerald-600 font-bold uppercase tracking-wider mb-1">Skor Akhir Anda</div>
+        <div class="text-5xl font-black text-emerald-600 mb-2"><span id="final-score">0</span><span
+            class="text-2xl text-gray-500">/100</span></div>
+        <div class="text-gray-600 font-medium" id="final-percentage">Benar 0 dari 100</div>
+        <div class="mt-4 text-lg font-semibold" id="feedback-message">Sangat Baik!</div>
+      </div>
+
+      <!-- TOMBOL ULANGI & MATERI PDF -->
+      <button onclick="resetQuiz()"
+        class="w-full max-w-sm bg-gray-800 hover:bg-gray-900 text-white font-bold py-4 rounded-xl shadow-lg transform transition active:scale-95 text-lg flex items-center justify-center gap-2">
+        <i class="fas fa-redo"></i> Ulangi Kuis
+      </button>
+
+      <!-- GANTI LINK GOOGLE DRIVE DI BAWAH INI -->
+      <a href="https://drive.google.com/file/d/1eUpcLj_bMc4MVzVqjtDHW7sEziNpvDYB/view?usp=sharing" target="_blank"
+        class="w-full max-w-sm mt-3 bg-blue-100 hover:bg-blue-200 text-blue-700 font-bold py-4 rounded-xl shadow-sm transform transition active:scale-95 text-lg flex items-center justify-center gap-2">
+        <i class="fas fa-file-pdf text-red-500"></i> Unduh Materi PDF
+      </a>
+    </div>
+
+  </div>
+
+  <script>
+    // ==========================================
+    // 1. PENGATURAN GOOGLE APPS SCRIPT
+    // ==========================================
+    const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwpeSt5j7uFrn5UapjGquP25h4yfOBpwZVM6OS5w8U5B4RLq_uSoPY3tL9tCtASzsOlmA/exec';
+    // ==========================================
+
+    const modalOverlay = document.getElementById('modal-overlay');
+    const infoModal = document.getElementById('info-modal');
+    const nameModal = document.getElementById('name-modal');
+    const userBadge = document.getElementById('user-badge');
+    const displayUserName = document.getElementById('display-user-name');
+
+    window.onload = () => {
+      modalOverlay.classList.remove('hidden');
+      infoModal.classList.remove('hidden');
+      nameModal.classList.add('hidden');
+
+      const savedName = localStorage.getItem('quizUserName');
+      if (savedName) {
+        showUserBadge(savedName);
+      }
+    };
+
+    function continueFromInfo() {
+      infoModal.classList.add('hidden');
+      const savedName = localStorage.getItem('quizUserName');
+      if (savedName) {
+        modalOverlay.classList.add('hidden');
+        resumeQuizIfAny(); // Jalankan fungsi resume jika pernah ada state
+      } else {
+        nameModal.classList.remove('hidden');
+      }
+    }
+
+    function submitName(event) {
+      event.preventDefault();
+      const nameInput = document.getElementById('user-name-input').value.trim();
+      if (!nameInput) return;
+
+      document.getElementById('name-form').classList.add('hidden');
+      document.getElementById('loading-state').classList.remove('hidden');
+
+      const formData = new URLSearchParams();
+      formData.append('nama', nameInput);
+      formData.append('tanggal', new Date().toLocaleString('id-ID'));
+
+      fetch(APPS_SCRIPT_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: formData.toString()
+      })
+        .then(response => { finalizeUserLogin(nameInput); })
+        .catch(error => { finalizeUserLogin(nameInput); });
+    }
+
+    function finalizeUserLogin(name) {
+      localStorage.setItem('quizUserName', name);
+      modalOverlay.classList.add('hidden');
+      showUserBadge(name);
+      resumeQuizIfAny(); // Resume kuis setelah input nama
+    }
+
+    function showUserBadge(name) {
+      userBadge.classList.remove('hidden');
+      displayUserName.innerText = `Halo, ${name}`;
+    }
+
+    // ==========================================
+    // FITUR AUTO-SAVE DAN RESUME KUIS
+    // ==========================================
+    function saveQuizState() {
+      const state = {
+        currentQuestion: currentQuestion,
+        score: score,
+        userAnswers: userAnswers
+      };
+      localStorage.setItem('quizSavedState', JSON.stringify(state));
+    }
+
+    function resumeQuizIfAny() {
+      const savedState = localStorage.getItem('quizSavedState');
+      if (savedState) {
+        const parsedState = JSON.parse(savedState);
+
+        // Pastikan ada jawaban yang sudah diisi agar tidak resume ke soal 1 tanpa alasan
+        const hasStarted = parsedState.userAnswers.some(ans => ans !== null);
+
+        if (hasStarted && parsedState.currentQuestion < quizData.length) {
+          currentQuestion = parsedState.currentQuestion;
+          score = parsedState.score;
+          userAnswers = parsedState.userAnswers;
+
+          scoreDisplay.innerText = score;
+
+          // Langsung pindah ke layar kuis tanpa lewat layar start
+          startScreen.classList.add('hidden');
+          quizScreen.classList.remove('hidden');
+          quizScreen.classList.add('flex');
+
+          loadQuestion();
+        }
+      }
+    }
+
+    // ==========================================
+    // DATA KUIS (100 SOAL TETAP SAMA)
+    // ==========================================
+    const quizData = [
+      // --- 50 SOAL ORIGINAL (DENGAN PEMBAHASAN) ---
+      { question: "Apa arti dari kata 'Conservation' menurut asal katanya yang dipopulerkan oleh Theodore Roosevelt (1902)?", options: ["Con (bersama) dan Servare (menyimpan/memelihara)", "Con (mengubah) dan Servation (alam)", "Con (hutan) dan Servare (melindungi)", "Con (komunitas) dan Servation (pelestarian)"], correct: 0, explanation: "Kata konservasi dipopulerkan oleh Theodore Roosevelt dari kata latin 'Con' yang berarti together (bersama) dan 'Servare' yang berarti to keep/save (menyimpan/memelihara apa yang kita miliki)." },
+      { question: "Menurut Perundang-undangan Indonesia, konservasi adalah pengelolaan sumber daya alam hayati yang pemanfaatannya dilakukan secara...", options: ["Eksploitatif dan maksimal", "Bijaksana untuk menjamin kesinambungan", "Terbatas hanya untuk peneliti", "Bebas untuk seluruh masyarakat lokal"], correct: 1, explanation: "Dalam UU, Konservasi SDA Hayati adalah pengelolaan yang pemanfaatannya dilakukan secara bijaksana untuk menjamin kesinambungan persediaannya dengan tetap memelihara kualitas dan keanekaragaman." },
+      { question: "Berikut ini yang BUKAN merupakan ruang lingkup konservasi yang disebutkan dalam materi adalah...", options: ["Konservasi satwa liar", "Konservasi ekologi", "Konservasi warisan budaya", "Konservasi luar angkasa"], correct: 3, explanation: "Ruang lingkup konservasi meliputi: konservasi satwa liar, ekologi, sumber daya (alam dan buatan), dan konservasi warisan budaya (kebendaan dan non-kebendaan). Konservasi luar angkasa tidak termasuk." },
+      { question: "Hewan yang hidup di alam bebas, baik di darat, air, maupun udara, dan belum didomestikasi disebut...", options: ["Hewan peliharaan", "Satwa liar", "Ternak", "Flora endemik"], correct: 1, explanation: "Satwa liar adalah hewan yang masih memiliki sifat alaminya, hidup di alam bebas, dan belum mengalami proses domestikasi (penjinakan untuk dipelihara manusia)." },
+      { question: "Cabang ilmu biologi yang mempelajari hubungan timbal balik organisme dengan lingkungannya disebut...", options: ["Morfologi", "Taksonomi", "Ekologi", "Fisiologi"], correct: 2, explanation: "Ekologi berasal dari kata Oikos (rumah) dan Logos (ilmu), secara harafiah adalah ilmu yang mempelajari hubungan timbal balik antara makhluk hidup dengan lingkungannya." },
+      { question: "Sumber daya yang sengaja dibuat manusia untuk memenuhi kebutuhan hidupnya (seperti waduk, sawah) disebut...", options: ["Sumber daya alam", "Sumber daya buatan", "Sumber daya manusia", "Sumber daya usaha"], correct: 1, explanation: "Sumber daya buatan adalah hasil karya manusia seperti waduk, bendungan, sawah, atau bangunan yang diciptakan untuk memenuhi kebutuhan hidup manusia." },
+      { question: "Lagu, tarian tradisional, ritual, dan keterampilan kemahiran masyarakat merupakan contoh warisan budaya...", options: ["Kebendaan", "Kuno", "Non-kebendaan", "Ekologi"], correct: 2, explanation: "Warisan budaya non-kebendaan (Intangible Cultural Heritage) meliputi hal-hal yang tidak berwujud fisik seperti tradisi lisan, seni pertunjukan, ritual, dan keterampilan kerajinan tradisional." },
+      { question: "Berdasarkan PP No 26 Tahun 2008, Kawasan Lindung Nasional mencakup kawasan berikut, KECUALI...", options: ["Kawasan rawan bencana alam", "Kawasan suaka alam dan cagar budaya", "Kawasan industri terpadu", "Kawasan perlindungan setempat"], correct: 2, explanation: "PP No 26/2008 tentang RTRW Nasional menetapkan kawasan lindung meliputi perlindungan bawahannya, perlindungan setempat, suaka alam, rawan bencana, dan lindung geologi. Kawasan industri bukan kawasan lindung." },
+      { question: "Kawasan hutan yang fungsi pokoknya sebagai perlindungan sistem penyangga kehidupan untuk mengatur penyediaan jasa lingkungan adalah...", options: ["Hutan Lindung", "Hutan Produksi", "Taman Buru", "Suaka Margasatwa"], correct: 0, explanation: "Sesuai regulasi, Hutan Lindung berfungsi sebagai penyangga kehidupan untuk mengatur tata air, mencegah banjir, mengendalikan erosi, mencegah intrusi air laut, dan memelihara kesuburan tanah." },
+      { question: "Kawasan yang mempunyai ekosistem asli, dikelola dengan sistem zonasi yang dimanfaatkan untuk penelitian, pendidikan, pariwisata adalah definisi dari...", options: ["Cagar Alam", "Taman Hutan Raya", "Taman Wisata Alam", "Taman Nasional"], correct: 3, explanation: "Kunci dari Taman Nasional adalah 'ekosistem asli' dan 'dikelola dengan sistem zonasi' (zona inti, pemanfaatan, rimba) untuk tujuan penelitian, ilmu pengetahuan, pendidikan, dan pariwisata alam." },
+      { question: "Dalam Strategi Konservasi Dunia (IUCN 1980), salah satu tujuan utamanya adalah...", options: ["Membuka lahan pertanian baru seluas-luasnya", "Melestarikan keanekaragaman genetik", "Membangun infrastruktur dalam hutan", "Melarang semua aktivitas ekonomi di sekitar hutan"], correct: 1, explanation: "Tiga tujuan utama IUCN 1980: (1) Memelihara proses ekologi penting, (2) Melestarikan keanekaragaman genetik, dan (3) Memastikan pemanfaatan spesies dan ekosistem secara berkelanjutan." },
+      { question: "Apa kepanjangan dari HCV?", options: ["High Conservation Value", "Habitat Conservation Volume", "High Community Value", "Human Conservation Vision"], correct: 0, explanation: "HCV singkatan dari High Conservation Value, atau dalam bahasa Indonesia dikenal sebagai NKT (Nilai Konservasi Tinggi)." },
+      { question: "Tahun berapakah identifikasi dan pengelolaan HCV menjadi syarat sertifikasi RSPO (Roundtable on Sustainable Palm Oil)?", options: ["1999", "2004", "2008", "2013"], correct: 1, explanation: "Pendekatan HCV diadopsi oleh RSPO pada tahun 2004 (sertifikasi kelapa sawit berkelanjutan) untuk memastikan pembukaan lahan tidak merusak area bernilai konservasi tinggi." },
+      { question: "NKT (Nilai Konservasi Tinggi) 1 berfokus pada kawasan yang mempunyai tingkat...", options: ["Kandungan mineral yang tinggi", "Produktivitas kayu yang maksimal", "Keanekaragaman Hayati yang penting", "Erosi yang sangat parah"], correct: 2, explanation: "NKT 1 secara spesifik berfokus pada kawasan yang memiliki tingkat Keanekaragaman Hayati yang penting, meliputi spesies endemik, langka, atau terancam punah." },
+      { question: "Kawasan yang memberikan fungsi pendukung keanekaragaman hayati bagi kawasan lindung/konservasi termasuk dalam...", options: ["NKT 1.1", "NKT 2.1", "NKT 3", "NKT 4.2"], correct: 0, explanation: "NKT 1.1 adalah sub-kategori NKT 1 yang berfokus pada kawasan yang terletak di dalam atau berbatasan dan berfungsi sebagai pendukung kawasan lindung yang telah ditetapkan." },
+      { question: "Menurut status spesies IUCN, 'Extinct' berarti...", options: ["Kritis", "Genting", "Spesies tidak ditemukan lagi di alam (Punah)", "Risiko Rendah"], correct: 2, explanation: "Extinct (EX) adalah kategori status terburuk dari IUCN yang berarti spesies tersebut dipastikan sudah punah dan tidak ditemukan satu individu pun yang bertahan hidup." },
+      { question: "Harimau Jawa dan Harimau Bali dalam daftar IUCN masuk ke dalam kategori...", options: ["Critically Endangered (CR)", "Extinct (Punah)", "Vulnerable (Rentan)", "Least Concern (Risiko Rendah)"], correct: 1, explanation: "Harimau Jawa (Panthera tigris sondaica) dan Harimau Bali (Panthera tigris balica) telah dinyatakan punah (Extinct) pada abad ke-20 akibat hilangnya habitat dan perburuan." },
+      { question: "Jalak Bali, Elang Jawa, dan Harimau Sumatera termasuk dalam kategori status konservasi IUCN...", options: ["Critically Endangered (CR / Kritis)", "Data Deficient (DD)", "Least Concern (LC)", "Extinct (Punah)"], correct: 0, explanation: "Satwa-satwa ini menghadapi risiko kepunahan yang sangat tinggi di alam liar sehingga IUCN menetapkannya sebagai Critically Endangered (Sangat Kritis)." },
+      { question: "Maleo, Banteng, Anoa, dan Bekantan berstatus EN menurut IUCN. EN singkatan dari...", options: ["Environment", "Extinct Naturally", "Endangered (Genting/Terancam)", "Endemic Native"], correct: 2, explanation: "EN adalah singkatan dari Endangered, yang berarti spesies ini sedang menghadapi risiko kepunahan yang sangat tinggi (Genting/Terancam) di alam liar." },
+      { question: "Merak Hijau dan Kasuari diklasifikasikan sebagai VU oleh IUCN. Apa arti dari VU?", options: ["Very Unique", "Vulnerable (Rentan)", "Valuable (Berharga)", "Vanished (Hilang)"], correct: 1, explanation: "VU adalah Vulnerable, artinya spesies ini Rentan terhadap kepunahan di alam liar dalam waktu dekat jika faktor ancaman tidak membaik." },
+      { question: "Ayam Hutan Merah tergolong dalam spesies dengan status LC, yang artinya...", options: ["Lost Cause (Hilang selamanya)", "Lower Class (Kelas bawah)", "Least Concern (Berisiko Rendah)", "Local Creature (Satwa lokal)"], correct: 2, explanation: "LC (Least Concern) atau Berisiko Rendah diberikan kepada spesies yang telah dievaluasi namun tidak memenuhi kriteria terancam punah, biasanya karena populasinya masih melimpah." },
+      { question: "Status 'Data Deficient (DD)' pada IUCN berarti...", options: ["Hewan tersebut sudah punah", "Populasi hewan tersebut melimpah", "Informasi kurang memadai untuk perkirakan risiko kepunahan", "Satwa tidak dilindungi secara hukum"], correct: 2, explanation: "Data Deficient (DD) berarti data yang ada tidak cukup untuk melakukan penilaian langsung atau tidak langsung terhadap risiko kepunahan satwa tersebut." },
+      { question: "NKT 1.4 difokuskan pada kawasan yang merupakan habitat bagi spesies yang digunakan secara...", options: ["Permanen sepanjang tahun", "Eksklusif oleh manusia", "Temporer (seperti tempat bersarang/migrasi sementara)", "Komersial"], correct: 2, explanation: "NKT 1.4 adalah habitat atau lokasi tempat konsentrasi spesies secara temporer namun penting, seperti rute migrasi burung atau tempat bertelur penyu." },
+      { question: "Kawasan bentang alam yang penting bagi dinamika ekologi secara alami merupakan definisi utama dari...", options: ["NKT 1", "NKT 2", "NKT 4", "NKT 6"], correct: 1, explanation: "NKT 2 berfokus pada kawasan bentang alam (lanskap) luas yang masih utuh di mana sebagian besar populasi spesies alami masih ada dengan pola distribusi alaminya." },
+      { question: "Kriteria NKT 2.1 mensyaratkan adanya daerah inti (core area) minimal seluas...", options: ["> 5.000 Ha", "> 10.000 Ha", "> 15.000 Ha", "> 20.000 Ha"], correct: 3, explanation: "Dalam panduan NKT Indonesia, kawasan bentang alam besar (NKT 2) biasanya mensyaratkan adanya daerah inti (core area) sedikitnya seluas 20.000 hektar." },
+      { question: "Kawasan yang berisi dua atau lebih ekosistem dengan garis batas yang tidak terputus (berkesinambungan) termasuk dalam kategori...", options: ["NKT 1.1", "NKT 2.2", "NKT 4.1", "NKT 5"], correct: 1, explanation: "NKT 2.2 adalah kawasan berupa ekoton atau mosaik ekosistem yang saling terhubung tanpa terputus, memungkinkan pergerakan satwa antar ekosistem." },
+      { question: "Kawasan yang mempunyai ekosistem langka atau terancam punah (seperti lahan gambut) masuk dalam kategori...", options: ["NKT 3", "NKT 4", "NKT 5", "NKT 6"], correct: 0, explanation: "NKT 3 didefinisikan sebagai kawasan yang di dalamnya terdapat ekosistem langka atau terancam punah secara alami, contohnya hutan kerangas, rawa gambut dalam, atau karst." },
+      { question: "Hutan tipe miskin hara yang tumbuh di atas tanah yang berasal dari batuan induk berkuarsa disebut...", options: ["Hutan Mangrove", "Hutan Kerangas", "Hutan Tropis", "Hutan Savana"], correct: 1, explanation: "Hutan Kerangas adalah ekosistem unik dan langka yang tumbuh di atas tanah podsosol kuarsa putih yang sangat miskin unsur hara dan asam." },
+      { question: "NKT 4 merupakan kawasan yang menyediakan fungsi penting berupa...", options: ["Kebutuhan dasar masyarakat (Pangan)", "Identitas budaya leluhur", "Jasa-jasa Lingkungan Alami", "Ekosistem yang sangat langka"], correct: 2, explanation: "NKT 4 khusus menilai kawasan yang menyediakan jasa-jasa lingkungan alami pada kondisi kritis, seperti pengendalian air, pencegahan erosi, dan pencegahan kebakaran." },
+      { question: "Kawasan hutan yang terletak pada punggung gunung sering berfungsi menangkap kabut dan mencairkannya menjadi tetesan air. Hutan ini disebut...", options: ["Hutan Bakau", "Hutan Riparian", "Hutan Sabana", "Hutan Berawan (Cloud Forest)"], correct: 3, explanation: "Cloud Forest (Hutan Berawan) berperan penting sebagai NKT 4 penangkap air alami di wilayah punggung bukit/gunung tinggi dengan curah hujan/kabut lebat." },
+      { question: "Ekosistem yang berada di sepanjang tepi sungai yang penting sebagai filter laju erosi dan pengendali luapan banjir disebut...", options: ["Ekosistem Karst", "Ekosistem Riparian", "Ekosistem Pelagis", "Ekosistem Gambut"], correct: 1, explanation: "Ekosistem Riparian adalah zona transisi antara perairan (sungai) dan daratan yang sangat penting untuk menjaga kualitas air dan mencegah erosi tebing sungai." },
+      { question: "Kawasan batu gamping yang kedap air namun memiliki rekahan penyimpan air di gua-gua (tandon air raksasa) disebut ekosistem...", options: ["Karst", "Riparian", "Kerangas", "Mangrove"], correct: 0, explanation: "Ekosistem Karst terbentuk dari batuan gamping (kapur). Gua-gua dan sungai bawah tanah di karst berfungsi sebagai penyimpan dan penyalur air bawah tanah yang vital." },
+      { question: "Kawasan NKT 4.2 sangat penting bagi pengendalian...", options: ["Kebakaran hutan", "Air bersih hilir", "Erosi dan Sedimentasi", "Populasi harimau"], correct: 2, explanation: "NKT 4.2 berfokus pada kawasan yang penting untuk mencegah erosi tanah yang parah dan menahan sedimentasi lumpur agar tidak menutupi sungai/sumber air." },
+      { question: "Berapa batas Tingkat Bahaya Erosi (TBE) yang dikategorikan berat sebagai Kriteria NKT 4.2?", options: ["Lebih dari 50 ton/Ha/thn", "Lebih dari 100 ton/Ha/thn", "Lebih dari 180 ton/Ha/thn", "Lebih dari 300 ton/Ha/thn"], correct: 2, explanation: "Dalam parameter konservasi, erosi tanah melebihi 180 ton/Hektar/Tahun diklasifikasikan sebagai tingkat bahaya erosi berat sehingga kawasan itu menjadi NKT 4.2." },
+      { question: "Kawasan NKT 4.3 (seperti rawa, jalur hijau) memiliki fungsi vital sebagai...", options: ["Sumber utama mata pencaharian penduduk", "Sekat alam untuk mencegah meluasnya kebakaran", "Habitat khusus burung migran", "Tempat pembuangan sedimen"], correct: 1, explanation: "NKT 4.3 adalah kawasan yang berfungsi sebagai sekat bakar alami (natural fire barrier), seperti daerah rawa berair yang memutus penjalaran api saat terjadi karhutla." },
+      { question: "Menurut tabel tingkat kelerengan, lereng dengan sudut kemiringan '45% atau lebih' tergolong dalam kelas...", options: ["Agak Curam", "Curam", "Sangat Curam", "Landai"], correct: 2, explanation: "Kemiringan >45% dikategorikan sangat curam (terjal). Kawasan ini dilarang keras untuk dibuka karena potensi longsor dan erosi yang mematikan." },
+      { question: "Jenis tanah Andosol, Laterit, Grumosol dan Podsolik menurut kelas kepekaan erosi tergolong jenis yang...", options: ["Tidak Peka", "Kurang Peka", "Agak Peka", "Peka"], correct: 3, explanation: "Tanah-tanah jenis ini (seperti podsolik) memiliki struktur ikatan yang mudah hancur oleh hujan, sehingga sangat 'Peka' terhadap erosi." },
+      { question: "NKT 5 mengidentifikasi kawasan alam yang penting untuk pemenuhan kebutuhan...", options: ["Ekspor nasional", "Dasar masyarakat lokal (pangan, air, kayu bakar, obat)", "Olahraga dan Rekreasi turis asing", "Bahan baku industri skala besar"], correct: 1, explanation: "NKT 5 hadir untuk melindungi kawasan alam yang mutlak diperlukan oleh masyarakat lokal/adat untuk memenuhi kebutuhan subsisten harian mereka." },
+      { question: "Berikut ini merupakan contoh pemanfaatan areal untuk NKT 5, KECUALI...", options: ["Mengambil madu dan rotan di hutan", "Berburu hewan liar untuk dijual ke pasar internasional", "Mengambil air minum dari mata air", "Mencari kayu bakar untuk memasak harian"], correct: 1, explanation: "NKT 5 ditujukan untuk kebutuhan dasar (subsisten). Menjual satwa ke pasar internasional merupakan komersial berskala besar dan ilegal, bukan NKT 5." },
+      { question: "Kawasan NKT 6 adalah situs, sumber daya, atau habitat yang memiliki fungsi penting untuk...", options: ["Penyedia air bersih bawah tanah", "Daerah resapan air hujan", "Identitas budaya tradisional komunitas lokal/adat", "Batas negara antar wilayah"], correct: 2, explanation: "NKT 6 adalah kawasan sakral, makam leluhur, atau situs sejarah yang sangat krusial dalam mempertahankan identitas budaya, tradisi, dan spiritual masyarakat." },
+      { question: "Pemukiman kecil yang terdiri 4-6 rumah tangga milik Dayak Pesaguan yang dibangun dekat lahan pertanian disebut...", options: ["Betang", "Doha / pedohasan", "Honai", "Lumbung"], correct: 1, explanation: "Doha atau pedohasan adalah bentuk pemukiman komunal skala kecil masyarakat Dayak Pesaguan yang biasanya berada di sekitar wilayah ladang mereka." },
+      { question: "Situs keramat, makam leluhur, batu keramat, dan tempat upacara adat termasuk dalam klasifikasi kawasan...", options: ["NKT 3", "NKT 4", "NKT 5", "NKT 6"], correct: 3, explanation: "Tempat-tempat yang bernilai spiritual atau historis bagi budaya masyarakat adat secara spesifik dilindungi di bawah penilaian NKT 6." },
+      { question: "Dalam proses pengumpulan data NKT, data peta topografi, tutupan lahan satelit, dan iklim tergolong dalam...", options: ["Data Primer", "Data Sekunder", "Data Asumsi", "Data Komunitas"], correct: 1, explanation: "Data sekunder adalah data yang sudah tersedia dari sumber lain (misal dari satelit BMKG, laporan pemerintah, peta RBI) sebelum peninjauan lapangan dilakukan." },
+      { question: "Tahapan identifikasi NKT terdiri dari proses berikut, kecuali...", options: ["Persiapan Studi", "Pengumpulan Data Lapangan (Primer)", "Membakar lahan uji coba (Testing)", "Analisa, Pemetaan, dan Laporan"], correct: 2, explanation: "Membakar lahan uji coba sangat bertentangan dengan prinsip NKT. Tahapan asli adalah persiapan, studi awal, pengumpulan data primer, analisis/pemetaan, dan pelaporan." },
+      { question: "Salah satu upaya pelestarian/restorasi untuk kawasan HCV-HCS yang terdegradasi bertujuan untuk...", options: ["Mengubah area tersebut menjadi pemukiman kota", "Meningkatkan nilai konservasi dan memperbaiki konektivitas lanskap", "Memaksimalkan penanaman kelapa sawit", "Membangun kawasan industri ekstraktif"], correct: 1, explanation: "Restorasi (misal reboisasi) bertujuan mengembalikan fungsi ekologis lahan yang rusak agar nilai konservasinya meningkat dan lanskap terhubung kembali bagi perlintasan satwa." },
+      { question: "Sebagai bagian dari rencana pengelolaan areal HCV-HCS, pemantauan biologis berkala dilakukan khususnya untuk areal...", options: ["NKT 1 (Spesies langka/terancam punah)", "NKT 5 (Kebutuhan air masyarakat)", "NKT 6 (Batu keramat leluhur)", "NKT 4 (Sumber erosi lereng terjal)"], correct: 0, explanation: "Pemantauan biologis (biological monitoring) wajib dilakukan untuk NKT 1 guna melacak populasi, jejak, atau ancaman terhadap spesies langka yang mendiami kawasan tersebut." },
+      { question: "Pengumpulan data melalui wawancara masyarakat lokal, tetua adat, dan observasi situs budaya sangat diperlukan khususnya untuk...", options: ["NKT 2", "NKT 3", "NKT 6", "NKT 1.2"], correct: 2, explanation: "NKT 6 adalah tentang identitas budaya, sehingga metode utamanya adalah interaksi sosial, wawancara tokoh adat, pemetaan partisipatif, dan kunjungan ke situs keramat." },
+      { question: "Peraturan menteri yang menetapkan daftar jenis tumbuhan dan satwa dilindungi tahun 2018 adalah...", options: ["Permen LHK No. 20", "UU No. 32", "PP No. 26", "Keppres No. 10"], correct: 0, explanation: "Peraturan Menteri Lingkungan Hidup dan Kehutanan (Permen LHK) No. P.20/MENLHK/SETJEN/KUM.1/6/2018 adalah dasar hukum pembaruan daftar flora fauna dilindungi di Indonesia." },
+      { question: "Paus Biru, Banteng, Anoa, dan Harimau Sumatera menurut lampiran Peraturan Menteri termasuk dalam kategori...", options: ["Hama", "Spesies invasif", "Satwa buruan", "Satwa dilindungi"], correct: 3, explanation: "Keempat spesies tersebut masuk secara eksplisit dalam daftar satwa yang secara mutlak dilindungi oleh negara karena kerentanannya." },
+      { question: "Apa tujuan dari Peer Review (penilaian oleh ahli) pada tahapan penyusunan laporan identifikasi NKT?", options: ["Menurunkan biaya produksi kebun", "Menjamin kualitas, keakuratan data, dan validitas temuan NKT", "Mempersulit perizinan masyarakat lokal", "Menghapus data-data primer"], correct: 1, explanation: "Peer review melibatkan penilai independen ahli (assessor) untuk memastikan metodologi, data, dan hasil rekomendasi HCV sudah sesuai dengan standar ilmiah yang ketat." },
+
+      // --- 50 SOAL BARU (DENGAN PEMBAHASAN) ---
+      { question: "Menurut UU No. 5 Tahun 1990 tentang Konservasi SDA Hayati, sanksi pidana terberat bagi pelaku perdagangan satwa liar dilindungi adalah...", options: ["Denda administratif 10 juta rupiah", "Penjara maksimal 5 tahun dan denda 100 juta rupiah", "Kerja sosial di kawasan konservasi", "Penyitaan seluruh aset pribadi"], correct: 1, explanation: "Pasal 40 ayat (2) UU No. 5/1990 menyatakan pelanggaran eksploitasi satwa/tumbuhan dilindungi diancam pidana penjara paling lama 5 tahun dan denda maksimal Rp 100.000.000." },
+      { question: "Spesies yang penyebarannya terbatas pada suatu wilayah geografis tertentu dan tidak ditemukan di tempat lain secara alami disebut...", options: ["Spesies Invasif", "Spesies Eksotik", "Spesies Endemik", "Spesies Migran"], correct: 2, explanation: "Endemik adalah flora atau fauna yang hanya hidup secara alami di suatu daerah sempit tertentu (misal: Komodo hanya ada di P. Komodo dan sekitarnya)." },
+      { question: "Selain wilayah habitat satwa, NKT 1 juga mencakup area yang memiliki...", options: ["Deposit emas dan batu bara", "Kawasan yang telah diubah menjadi perkebunan murni", "Tingkat endemisme yang tinggi", "Pusat perbelanjaan masyarakat"], correct: 2, explanation: "NKT 1 difokuskan pada Kawasan Konsentrasi Keanekaragaman Hayati, yang sering ditandai dengan tingkat endemisme (kekhasan spesies) yang sangat tinggi di lokasi tersebut." },
+      { question: "Konsep FPIC (Free, Prior, Informed Consent) sangat penting dalam proses identifikasi NKT, terutama terkait NKT...", options: ["1 dan 2", "5 dan 6", "3 dan 4", "1 dan 3"], correct: 1, explanation: "FPIC (Persetujuan Atas Dasar Informasi Awal Tanpa Paksaan) krusial pada NKT 5 dan 6 karena menyangkut hak tenurial, kebutuhan hidup dasar, dan situs budaya masyarakat adat." },
+      { question: "Kawasan bernilai konservasi tinggi (HCV) yang didefinisikan sebagai area yang merupakan penyedia sumber air minum bagi masyarakat masuk dalam cakupan...", options: ["NKT 4.1 dan NKT 5", "NKT 1 dan NKT 2", "NKT 6", "NKT 3"], correct: 0, explanation: "Air bersih merupakan fungsi penyedia jasa ekosistem (NKT 4.1 tangkapan air) yang pada saat bersamaan menjadi kebutuhan vital/dasar (NKT 5) bagi masyarakat setempat." },
+      { question: "HCS (High Carbon Stock) sering kali disandingkan dengan HCV. Fokus utama HCS adalah...", options: ["Melindungi satwa purba", "Melindungi hutan yang menyimpan cadangan karbon tinggi untuk mencegah emisi gas rumah kaca", "Membangun pabrik kelapa sawit ramah lingkungan", "Meningkatkan ekspor karbon ke luar negeri"], correct: 1, explanation: "Pendekatan High Carbon Stock bertujuan mencegah deforestasi dengan membedakan area hutan alam (penyimpan karbon tinggi) dan lahan terdegradasi yang boleh dikembangkan." },
+      { question: "Komitmen perusahaan perkebunan untuk tidak melakukan pembukaan hutan, tidak merusak lahan gambut, dan tidak mengeksploitasi manusia dikenal dengan singkatan...", options: ["AMDAL", "HGU", "NDPE", "CSR"], correct: 2, explanation: "NDPE singkatan dari 'No Deforestation, No Peat, No Exploitation'. Ini adalah kebijakan standar banyak perusahaan sawit berkelanjutan." },
+      { question: "Salah satu contoh kegiatan yang dapat mengancam integritas NKT 4.2 (kawasan pencegah erosi/sedimentasi) adalah...", options: ["Membuka jalan logging di kelerengan curam tanpa terasering", "Memanen madu hutan", "Mengadakan upacara adat di sungai", "Melakukan pemantauan satwa dengan kamera jebak"], correct: 0, explanation: "Pembukaan jalan tebang di lereng terjal menghilangkan tutupan vegetasi dan merusak struktur tanah, sehingga memicu erosi hebat dan longsor (ancaman NKT 4.2)." },
+      { question: "CITES adalah konvensi internasional yang mengatur tentang...", options: ["Perubahan iklim global", "Hak asasi masyarakat adat", "Perdagangan internasional flora dan fauna liar spesies terancam", "Batas wilayah laut antar negara"], correct: 2, explanation: "CITES (Convention on International Trade in Endangered Species of Wild Fauna and Flora) bertujuan memastikan perdagangan spesimen hewan/tumbuhan tidak mengancam kelangsungan hidup mereka." },
+      { question: "Dalam CITES, satwa yang dilarang keras untuk diperdagangkan secara komersial antar negara dimasukkan ke dalam daftar...", options: ["Appendiks I", "Appendiks II", "Appendiks III", "Daftar Merah"], correct: 0, explanation: "Appendiks I berisi daftar spesies flora/fauna yang terancam punah. Perdagangannya dilarang sama sekali kecuali untuk tujuan non-komersial yang sangat ketat (misal riset)." },
+      { question: "Berdasarkan prinsip RSPO, perusahaan yang membuka lahan HCV/NKT setelah batas waktu tertentu diwajibkan untuk...", options: ["Membayar pajak ganda ke pemerintah", "Melakukan kompensasi dan pemulihan (Remediation & Compensation)", "Menghentikan total produksi pabrik selamanya", "Hanya memberi bantuan sembako ke desa sekitar"], correct: 1, explanation: "Prosedur RSPO mewajibkan perusahaan yang menebang/membersihkan area NKT pasca Nov 2005 untuk melakukan program ganti rugi pemulihan ekosistem (RaCP)." },
+      { question: "Apa bedanya Hutan Lindung (HL) dan Kawasan Konservasi (seperti Taman Nasional)?", options: ["Tidak ada bedanya, keduanya sama saja", "HL untuk satwa, Taman Nasional untuk kayu", "HL fungsinya melindungi sistem tata air/tanah, Kawasan Konservasi utamanya melindungi keanekaragaman genetik/spesies asli", "HL boleh dijual, Taman Nasional milik warga"], correct: 2, explanation: "Hutan Lindung berfokus pada Jasa Lingkungan (tata air, erosi), sedangkan Taman Nasional/Cagar Alam berfokus utama pada perlindungan keragaman hayati (genetik/spesies)." },
+      { question: "Kawasan suaka alam yang ditujukan khusus untuk perlindungan spesies hewan/satwa liar yang membutuhkan habitat khusus disebut...", options: ["Cagar Alam", "Suaka Margasatwa", "Taman Hutan Raya", "Taman Wisata Alam"], correct: 1, explanation: "Suaka Margasatwa memiliki ciri khas difokuskan pada perlindungan satwa liar yang unik/terancam beserta perawatannya di habitat alaminya." },
+      { question: "Orangutan Kalimantan (Pongo pygmaeus) berstatus Kritis (CR) karena ancaman terbesar berupa...", options: ["Predator alami seperti elang", "Kehilangan habitat akibat konversi lahan dan deforestasi", "Penyakit bawaan genetik", "Gagalnya adaptasi cuaca dingin"], correct: 1, explanation: "Kehilangan dan fragmentasi habitat (hutan alam) akibat konversi menjadi kebun, perambahan, dan kebakaran hutan adalah penyebab utama penurunan populasi orangutan." },
+      { question: "Sebuah bukit kapur (karst) di dalam konsesi perusahaan menyimpan mata air yang diandalkan warga desa saat kemarau. Bukit ini dapat ditetapkan sebagai...", options: ["NKT 1 dan NKT 2", "NKT 3, NKT 4.1 dan NKT 5", "Hanya NKT 6", "Bukan area NKT karena ada dalam konsesi"], correct: 1, explanation: "Bukit kapur berpotensi sebagai ekosistem langka (NKT 3), penyedia jasa air (NKT 4.1), dan menjadi kebutuhan vital masyarakat saat kemarau (NKT 5)." },
+      { question: "Garis batas tak terlihat (imaginary) yang memisahkan fauna tipe Asia (Oriental) di barat dan fauna tipe Australia di timur Indonesia disebut...", options: ["Garis Weber", "Garis Khatulistiwa", "Garis Wallace", "Garis Bujur"], correct: 2, explanation: "Garis Wallace membagi keanekaragaman hayati Indonesia barat (mamalia besar seperti gajah/harimau) dengan Indonesia bagian tengah/timur." },
+      { question: "Komodo (Varanus komodoensis) merupakan satwa endemik yang wilayah penyebarannya dibatasi oleh perairan laut dalam, masuk dalam kelompok fauna wilayah...", options: ["Peralihan (Wallacea)", "Asiatis", "Australis", "Eropa"], correct: 0, explanation: "Komodo hidup di Nusa Tenggara Timur yang secara biogeografi masuk dalam zona Wallacea (daerah peralihan antara zona Asia dan Australia)." },
+      { question: "Konflik antara Manusia dan Satwa Liar (contoh: gajah masuk kebun) sering terjadi karena...", options: ["Satwa sengaja mencari masalah dengan manusia", "Habitat asli satwa terfragmentasi atau hilang sehingga mereka mencari makan keluar dari hutan", "Kurangnya pemberian makan dari pemerintah", "Satwa ingin mengubah diet mereka"], correct: 1, explanation: "Kehilangan koridor pergerakan dan penyusutan luas hutan membuat satwa kehabisan sumber makanan alami, sehingga mereka masuk ke area pertanian warga." },
+      { question: "Bagaimana cara terbaik perusahaan mengelola areal HCV yang berbatasan langsung dengan desa warga lokal?", options: ["Memasang pagar listrik tegangan tinggi", "Membuat kesepakatan partisipatif pengelolaan bersama (co-management) dengan warga", "Menugaskan tentara untuk berjaga penuh", "Membakar batas area"], correct: 1, explanation: "Pendekatan sosial (partisipatif) adalah yang paling efektif. Melibatkan masyarakat lokal menimbulkan rasa memiliki sehingga mereka ikut menjaga HCV dari perambahan/pembakaran." },
+      { question: "Hutan rawa gambut sangat penting dilindungi dari aktivitas drainase (pembuatan kanal air) karena drainase dapat menyebabkan...", options: ["Gambut menjadi subur untuk padi", "Gambut mengering, mudah terbakar, dan melepaskan emisi karbon sangat besar", "Satwa lebih mudah berkembang biak", "Mata air bermunculan"], correct: 1, explanation: "Gambut bagaikan spons penyimpan air. Jika dikeringkan lewat kanal, ia sangat rentan memicu kebakaran hutan dahsyat yang menyebarkan asap dan emisi CO2." },
+      { question: "Kegiatan 'Smart Patrol' yang dilakukan oleh tim konservasi di dalam area konsesi bertujuan untuk...", options: ["Mencari kayu bernilai jual", "Mendokumentasikan data satwa, merekam ancaman (jerat, perambahan) secara spasial", "Mencari lokasi baru untuk ditanam sawit", "Berburu satwa berlebih"], correct: 1, explanation: "SMART (Spatial Monitoring and Reporting Tool) Patrol adalah sistem patroli cerdas berbantuan GPS untuk merekam keberadaan flora/fauna serta ancaman ilegal di lapangan." },
+      { question: "Dalam NKT 5, jika hutan penyedia kayu bakar digunduli, pertimbangan apakah masyarakat desa terancam adalah...", options: ["Apakah kayu itu bisa dijual online", "Apakah ada alternatif yang tersedia secara mudah dan murah bagi warga desa (seperti tabung gas)", "Apakah warga desa akan pindah", "Berapa kerugian perusahaan"], correct: 1, explanation: "Kunci penentuan NKT 5 adalah ketiadaan alternatif substitusi. Jika hutan hilang dan warga miskin tak mampu beli gas LPG, maka kelangsungan hidup warga terancam." },
+      { question: "Sebuah kawasan mangrove di pesisir dinilai sebagai NKT 4. Apa fungsi jasa lingkungannya yang paling utama?", options: ["Sebagai tempat bersandarnya kapal pesiar", "Mencegah abrasi (pengikisan pantai) dan menahan intrusi air laut ke darat", "Sebagai lokasi tambak udang intensif", "Sebagai bahan baku kertas kualitas tinggi"], correct: 1, explanation: "Mangrove adalah pelindung alami pesisir. Akar napasnya yang kuat memecah energi gelombang laut (mencegah abrasi) dan menjadi habitat pemijahan ikan." },
+      { question: "Apa bedanya Spesies Payung (Umbrella Species) dan Spesies Kunci (Keystone Species) secara ekologi?", options: ["Keduanya tidak memiliki dampak", "Spesies payung memiliki rentang jelajah luas sehingga melindunginya turut melindungi spesies lain; Spesies kunci memiliki peran ekologis besar menjaga struktur ekosistem", "Spesies payung hidup di air, spesies kunci di darat", "Spesies kunci hanya ada di kebun binatang"], correct: 1, explanation: "Harimau adalah spesies payung (ruang jelajah luas). Gajah/Orangutan adalah spesies kunci (mereka menebar biji dan membuka kanopi yang menentukan nasib ekosistem)." },
+      { question: "Istilah deforestasi berarti...", options: ["Penanaman kembali hutan yang gundul", "Penebangan atau hilangnya hutan alam secara permanen yang diubah menjadi penggunaan lain", "Pembuatan kawasan lindung", "Pembibitan tanaman hias"], correct: 1, explanation: "Deforestasi adalah proses hilangnya tutupan hutan alam akibat konversi lahan, logging yang tidak lestari, atau kebakaran, dan tidak dikembalikan lagi menjadi hutan." },
+      { question: "Tindakan merehabilitasi kawasan sempadan sungai (riparian) yang telanjur rusak biasanya dilakukan dengan...", options: ["Mengeruk sungai menjadi lebih dalam", "Menyemprot bahan kimia pembasmi gulma", "Menanam kembali pohon-pohon asli/lokal di tepi sungai selebar aturan yang berlaku", "Membangun tanggul beton permanen"], correct: 2, explanation: "Restorasi riparian organik dilakukan dengan reboisasi menggunakan bibit pohon hutan lokal (misal: beringin, bambu) untuk memulihkan fungsi penahan erosi alami." },
+      { question: "Aturan umum lebar perlindungan sempadan untuk sungai besar (lebar > 30 meter) di Indonesia adalah...", options: ["10 meter dari tepi sungai", "50 meter dari tepi sungai", "100 meter dari tepi sungai", "200 meter dari tepi sungai"], correct: 2, explanation: "Berdasarkan Kepres No 32/1990 dan peraturan tata ruang, sempadan sungai besar minimal 100 meter dari kiri dan kanan pinggir sungai untuk mencegah erosi dan kerusakan hidrologi." },
+      { question: "Kehadiran Burung Rangkong (Hornbill) di sebuah hutan menandakan...", options: ["Hutan tersebut sudah rusak", "Ekosistem hutan primer yang masih baik dan pohon-pohon besar tempat bersarang masih tersedia", "Sebentar lagi akan terjadi kebakaran", "Masyarakat sekitar tidak berbudaya"], correct: 1, explanation: "Rangkong adalah indikator hutan sehat karena butuh kanopi lebat, pohon buah ficus besar untuk makan, dan lubang pohon besar yang tua untuk membuat sarang telur." },
+      { question: "Sistem Agroforestri dapat mendukung konservasi karena...", options: ["Mengubah total seluruh hutan alam", "Mencampurkan pohon kehutanan dengan tanaman pertanian sehingga menjaga fungsi ekologi lahan sambil memberi hasil ekonomi", "Membatasi masuknya air hujan", "Hanya menanam satu jenis rumput"], correct: 1, explanation: "Agroforestri (wanatani) adalah praktik mengombinasikan pohon dengan tanaman budidaya yang mendukung biodiversitas mikro dan menjaga tata air lebih baik dibanding monokultur." },
+      { question: "Ancaman terbesar bagi mamalia air tawar endemik seperti Pesut Mahakam adalah...", options: ["Perubahan iklim kutub", "Pencemaran sungai oleh limbah dan hilangnya habitat serta terjerat jaring nelayan", "Radiasi sinar matahari", "Persaingan dengan buaya"], correct: 1, explanation: "Pesut Mahakam statusnya sangat kritis (CR) akibat polusi batubara/sawit, lalu lintas tongkang bising, dan terperangkap alat tangkap ikan." },
+      { question: "Mengapa kawasan NKT tidak boleh secara sembarangan diaplikasikan bahan kimia herbisida atau pupuk anorganik berlebihan?", options: ["Karena harganya mahal", "Karena bahan kimia akan mencemari air/tanah di ekosistem rapuh tersebut dan meracuni flora/fauna alami", "Karena satwa tidak suka bau pupuk", "Karena tidak sesuai estetika"], correct: 1, explanation: "Aplikasi bahan kimia agro di/dekat NKT (seperti pinggir sungai/rawa) akan tersapu hujan (run-off), meracuni satwa akuatik dan mencemari sumber minum masyarakat." },
+      { question: "Jika sebuah area NKT 6 (Situs Budaya) diketahui keberadaannya melalui studi, langkah selanjutnya perusahaan adalah...", options: ["Menghancurkannya diam-diam", "Membuat pagar tinggi tanpa memberi tahu warga", "Memetakan batasnya bersama tokoh adat setempat dan disepakati untuk tidak diganggu", "Menjadikannya tempat rekreasi pekerja"], correct: 2, explanation: "Pengelolaan NKT 6 harus sepenuhnya partisipatif. Batas-batasnya harus dipetakan secara kolaboratif dengan pemangku adat agar dihormati oleh operator alat berat di lapangan." },
+      { question: "Penilaian HCV (HCV Assessment) yang sah harus dilakukan oleh...", options: ["Sembarang LSM", "Tim Assessor yang berlisensi dari HCV Resource Network (ALS)", "Mahasiswa magang", "Kepala desa setempat"], correct: 1, explanation: "Sejak 2014, laporan HCV untuk RSPO harus disupervisi oleh Lead Assessor berlisensi ALS (Assessor Licensing Scheme) untuk menjamin objektivitas dan kualitas keilmuan." },
+      { question: "Spesies 'Invasif' yang masuk ke dalam kawasan konservasi menimbulkan masalah karena...", options: ["Mereka sangat lambat berkembang biak", "Mereka mengalahkan dan mendesak spesies asli lokal dalam memperebutkan makanan/ruang", "Mereka terlalu mudah ditangkap", "Mereka memperbaiki unsur tanah"], correct: 1, explanation: "Spesies Asing Invasif (misal enceng gondok atau spesies ikan predator dari luar) dapat menghancurkan keseimbangan ekosistem karena tidak memiliki predator alami di tempat baru." },
+      { question: "Hutan yang baru tumbuh kembali secara alami setelah ditebang/terbakar, disebut dengan hutan...", options: ["Hutan Primer", "Hutan Sekunder", "Hutan Tanaman Industri", "Hutan Kerangas"], correct: 1, explanation: "Hutan sekunder adalah hutan yang sedang dalam proses suksesi (pemulihan) setelah mengalami gangguan besar di masa lalu, baik alami maupun campur tangan manusia." },
+      { question: "Sebuah kawasan padang rumput alami dengan sedikit pepohonan yang menjadi habitat rusa dan banteng disebut...", options: ["Riparian", "Sabana (Savannah)", "Mangrove", "Hutan Berawan"], correct: 1, explanation: "Sabana adalah ekosistem padang rumput khas di daerah beriklim kering (seperti Baluran/NTT) yang krusial bagi mamalia herbivora besar." },
+      { question: "Salah satu upaya pencegahan perburuan liar di area NKT perusahaan adalah...", options: ["Memasang rambu larangan, sosialisasi rutin, dan sanksi tegas pemutusan kerja jika pekerja terlibat", "Menyediakan senjata untuk pekerja", "Membakar hutan sekitar agar satwa menjauh", "Membiarkan karena perburuan adalah hak asasi"], correct: 0, explanation: "Tindakan mitigasi internal wajib diterapkan, yaitu SOP tegas larangan perburuan satwa dilindungi, sidak ke barak, edukasi, dan ancaman pidana/PHK bagi pelaku." },
+      { question: "Peran koridor satwa (wildlife corridor) dalam lanskap HCV adalah untuk...", options: ["Menjebak satwa agar mudah ditangkap", "Menghubungkan dua atau lebih petak hutan HCV agar satwa bisa melintas untuk kawin/mencari makan tanpa konflik", "Menjadi jalan utama alat berat", "Mencegah pertumbuhan pohon"], correct: 1, explanation: "Koridor sangat penting memecah masalah fragmentasi habitat. Jalur hijau ini memungkinkan pertukaran genetik satwa antar kawasan lindung sehingga tidak inbreeding." },
+      { question: "Kapan AMDAL (Analisis Mengenai Dampak Lingkungan) idealnya dilakukan terkait dengan identifikasi HCV?", options: ["Setelah kebun sawit ditanam", "Secara terintegrasi atau sebelum pembukaan lahan dilakukan", "Saat pabrik mulai beroperasi", "Saat terjadi demonstrasi warga"], correct: 1, explanation: "Studi kelayakan ekologis (AMDAL) dan identifikasi HCV wajib dilakukan pada tahap perencanaan sebelum ada pergerakan alat berat (land clearing)." },
+      { question: "Penggunaan kamera jebak (Camera Trap) dalam studi konservasi bertujuan untuk...", options: ["Mengambil foto pemandangan siang hari", "Inventarisasi diam-diam satwa pemalu atau nokturnal (beraktivitas malam) tanpa terganggu kehadiran manusia", "Menjebak warga yang masuk hutan", "Mengawasi laju pertumbuhan pohon"], correct: 1, explanation: "Camera trap menggunakan sensor gerak dan panas untuk memotret/merekam satwa liar tersembunyi (seperti harimau/macan dahan) untuk bukti validasi spesies NKT 1." },
+      { question: "Keberadaan 'Gua Kelelawar' yang sangat besar di suatu areal masuk dalam kategori penting karena...", options: ["Bisa ditambang kotorannya secara bebas", "NKT 1.4, sebagai habitat konsentrasi temporer spesifik yang fungsinya vital bagi spesies", "Sebagai tempat wisata ekstrem", "Tidak terlalu penting bagi ekologi"], correct: 1, explanation: "Gua kelelawar, rawa tempat burung air berkumpul, adalah NKT 1.4. Mereka vital bagi reproduksi atau tempat berlindung hewan dalam jumlah terkonsentrasi." },
+      { question: "Apa kaitan perlindungan HCV dengan perubahan iklim global?", options: ["Tidak ada kaitannya", "Menjaga hutan HCV utuh (terutama gambut dan primer) membantu menyimpan karbon dan mengurangi laju efek rumah kaca", "HCV meningkatkan suhu udara", "HCV menyerap radiasi ultraviolet"], correct: 1, explanation: "Ekosistem alami HCV/HCS adalah penyerap (sink) dan penyimpan karbon dioksida raksasa (terutama di gambut dan batang pohon)." },
+      { question: "Bagaimana cara membedakan antara kebutuhan 'Subsisten' (NKT 5) dan 'Komersial' dalam penilaian desa?", options: ["Subsisten untuk dijual ke kota besar, komersial untuk makan sendiri", "Subsisten untuk memenuhi kebutuhan hidup sehari-hari tanpa akumulasi modal, Komersial berorientasi bisnis profit", "Keduanya memiliki profit miliaran", "Tergantung keputusan perusahaan"], correct: 1, explanation: "NKT 5 melindungi area yang memberikan air minum, atap rumbia, pangan untuk perut mereka hari itu. Jika area dipakai membalak kayu untuk diekspor, itu komersial." },
+      { question: "Dalam pelaporan HCV, tahap Konsultasi Publik (Public Consultation) berguna untuk...", options: ["Membagi-bagikan uang kepada peserta", "Meminta masukan, klarifikasi, dan kritik dari para pihak (LSM, masyarakat, dinas) terkait temuan draf HCV", "Sekadar formalitas izin bangunan", "Mempromosikan produk sawit perusahaan"], correct: 1, explanation: "Draf laporan HCV harus dipaparkan ke publik agar pemangku kepentingan bisa mengkoreksi (misal ada situs budaya warga yang terlewat oleh tim penilai)." },
+      { question: "Keanekaragaman Hayati memiliki tiga tingkatan, yaitu...", options: ["Daratan, Lautan, Udara", "Genetik, Spesies, dan Ekosistem", "Mamalia, Burung, Reptil", "Flora, Fauna, Mikroba"], correct: 1, explanation: "Keragaman hayati beroperasi pada 3 level: Keragaman variasi gen dalam satu spesies, jumlah/jenis spesies dalam satu wilayah, dan keragaman tipe habitat/ekosistem." },
+      { question: "Perusahaan menemukan sarang Orangutan di sebuah pohon saat land clearing. Tindakan sesuai prinsip konservasi adalah...", options: ["Menebang pohon tersebut perlahan-lahan", "Menghentikan operasi di area itu segera, melapor ke BKSDA, dan membuat zona aman perlindungan", "Mengusir orangutan dengan meriam bambu", "Menangkap orangutan untuk dipelihara staf"], correct: 1, explanation: "Prinsip kehati-hatian (Precautionary Principle). Operasi di-stop (stop-work order), lokasi diisolasi, lalu dilaporkan ke otoritas negara (BKSDA) untuk evakuasi/solusi." },
+      { question: "Singkatan dari BKSDA adalah...", options: ["Badan Konservasi Satwa Daerah Angkatan", "Balai Konservasi Sumber Daya Alam", "Badan Keamanan Sosial dan Daerah", "Biro Kehutanan Sistem Daya Alam"], correct: 1, explanation: "BKSDA adalah unit pelaksana teknis di bawah Kementerian LHK yang bertugas memanajemen kawasan konservasi daerah dan peredaran tumbuhan/satwa liar." },
+      { question: "Jika sebuah perusahaan sukses mengelola HCV, keuntungan tidak langsung yang didapat adalah...", options: ["Bebas pajak kendaraan bermotor", "Memiliki akses terhadap pendanaan bank hijau, citra perusahaan yang baik, dan kemudahan akses pasar global", "Boleh menebang sisa hutan seenaknya", "Pekerja tidak perlu digaji"], correct: 1, explanation: "Sertifikasi (RSPO) dan pemenuhan standar hijau (NDPE) menjadi syarat mutlak perbankan internasional dan buyer/pembeli di Eropa/Amerika saat ini." },
+      { question: "Menurut UU, masyarakat berhak berperan serta dalam konservasi SDA Hayati. Salah satu wujud nyatanya adalah...", options: ["Melakukan pemburuan di Taman Nasional", "Melaporkan terjadinya tindak pidana satwa (misal perdagangan trenggiling) kepada aparat berwajib", "Menanam kelapa sawit di Cagar Alam", "Mengambil kayu bakar di area reklamasi"], correct: 1, explanation: "Peran serta aktif warga negara yang paling konkret adalah menjadi pengawas lingkungan (social control) dan melapor ke KLHK/Polisi jika melihat kejahatan lingkungan." },
+      { question: "Kawasan bernilai konservasi tinggi bersifat...", options: ["Mutlak tidak boleh diinjak manusia", "Dapat diintegrasikan dan dipelihara di dalam lanskap produksi asalkan fungsi nilai utamanya (NKT) tidak terganggu atau hilang", "Hanya berlaku di tanah milik negara", "Otomatis gugur jika ada izin HGU"], correct: 1, explanation: "Esensi pendekatan NKT/HCV adalah menyeimbangkan lanskap produksi (kebun) dengan pelestarian. Area HCV di dalam HGU harus dijaga keberadaan fungsionalnya." }
+    ];
+
+    let currentQuestion = 0;
+    let score = 0;
+    let userAnswers = new Array(quizData.length).fill(null);
+
+    const startScreen = document.getElementById('start-screen');
+    const quizScreen = document.getElementById('quiz-screen');
+    const resultScreen = document.getElementById('result-screen');
+    const questionText = document.getElementById('question-text');
+    const optionsContainer = document.getElementById('options-container');
+    const nextBtn = document.getElementById('next-btn');
+    const prevBtn = document.getElementById('prev-btn');
+    const progressBar = document.getElementById('progress-bar');
+    const questionCounter = document.getElementById('question-counter');
+    const scoreDisplay = document.getElementById('score-display');
+    const explanationBox = document.getElementById('explanation-box');
+    const explanationText = document.getElementById('explanation-text');
+    const quizScrollArea = document.getElementById('quiz-scroll-area');
+
+    function startQuiz() {
+      startScreen.classList.add('hidden');
+      quizScreen.classList.remove('hidden');
+      quizScreen.classList.add('flex');
+      currentQuestion = 0;
+      score = 0;
+      userAnswers.fill(null);
+      scoreDisplay.innerText = score;
+
+      saveQuizState(); // Simpan state bersih awal
+      loadQuestion();
+    }
+
+    function loadQuestion() {
+      const q = quizData[currentQuestion];
+      const hasAnswered = userAnswers[currentQuestion] !== null;
+
+      questionText.innerText = q.question;
+      questionCounter.innerText = `Soal ${currentQuestion + 1} / ${quizData.length}`;
+      progressBar.style.width = `${((currentQuestion) / quizData.length) * 100}%`;
+
+      if (currentQuestion > 0) {
+        prevBtn.classList.remove('hidden');
+        prevBtn.classList.add('flex');
+      } else {
+        prevBtn.classList.add('hidden');
+        prevBtn.classList.remove('flex');
+      }
+
+      optionsContainer.innerHTML = '';
+      const letters = ['A', 'B', 'C', 'D'];
+
+      q.options.forEach((opt, index) => {
+        const btn = document.createElement('button');
+        btn.className = `option-btn w-full text-left p-4 rounded-xl border-2 focus:outline-none flex items-center gap-3 mb-3 `;
+
+        let styleClasses = "border-gray-200 hover:border-emerald-400 hover:bg-emerald-50";
+        let iconHTML = `<i class="fas fa-check-circle text-white opacity-0 status-icon"></i>`;
+        let letterClasses = "bg-gray-100 text-gray-600";
+
+        if (hasAnswered) {
+          btn.disabled = true;
+          styleClasses = "border-gray-200 cursor-default opacity-60";
+
+          const isUserChoice = (userAnswers[currentQuestion] === index);
+          const isCorrectChoice = (q.correct === index);
+
+          if (isCorrectChoice) {
+            styleClasses = "option-correct opacity-100 shadow-md";
+            iconHTML = `<i class="fas fa-check-circle text-white status-icon"></i>`;
+            letterClasses = "bg-emerald-600 text-white";
+          } else if (isUserChoice && !isCorrectChoice) {
+            styleClasses = "option-wrong opacity-100 shadow-md";
+            iconHTML = `<i class="fas fa-times-circle text-white status-icon"></i>`;
+            letterClasses = "bg-red-600 text-white";
+          } else {
+            iconHTML = `<i class="fas fa-circle text-gray-300 status-icon"></i>`;
+          }
+        }
+
+        btn.className += styleClasses;
+        btn.innerHTML = `
+                    <div class="flex-shrink-0 w-8 h-8 rounded-lg ${letterClasses} flex items-center justify-center font-bold text-sm font-mono btn-letter transition-colors">
+                        ${letters[index]}
+                    </div>
+                    <span class="flex-grow font-medium text-sm md:text-base">${opt}</span>
+                    ${iconHTML}
+                `;
+
+        if (!hasAnswered) {
+          btn.onclick = () => handleSelect(index);
+        }
+
+        optionsContainer.appendChild(btn);
+      });
+
+      if (hasAnswered) {
+        explanationBox.classList.remove('hidden');
+        explanationText.innerText = q.explanation;
+
+        nextBtn.disabled = false;
+        nextBtn.classList.remove('bg-gray-300', 'text-gray-500', 'cursor-not-allowed');
+        nextBtn.classList.add('bg-emerald-600', 'hover:bg-emerald-700', 'text-white', 'shadow-md');
+      } else {
+        explanationBox.classList.add('hidden');
+        nextBtn.disabled = true;
+        nextBtn.classList.add('bg-gray-300', 'text-gray-500', 'cursor-not-allowed');
+        nextBtn.classList.remove('bg-emerald-600', 'hover:bg-emerald-700', 'text-white', 'shadow-md');
+      }
+
+      if (currentQuestion === quizData.length - 1 && hasAnswered) {
+        nextBtn.innerHTML = '<span>Selesai</span> <i class="fas fa-flag-checkered"></i>';
+        nextBtn.classList.replace('bg-emerald-600', 'bg-gray-800');
+        nextBtn.classList.replace('hover:bg-emerald-700', 'hover:bg-gray-900');
+      } else {
+        nextBtn.innerHTML = '<span>Selanjutnya</span> <i class="fas fa-arrow-right"></i>';
+        if (hasAnswered) {
+          nextBtn.classList.replace('bg-gray-800', 'bg-emerald-600');
+          nextBtn.classList.replace('hover:bg-gray-900', 'hover:bg-emerald-700');
+        }
+      }
+
+      quizScrollArea.scrollTop = 0;
+
+      if (!hasAnswered) {
+        questionText.parentElement.classList.remove('fade-in');
+        void questionText.parentElement.offsetWidth;
+        questionText.parentElement.classList.add('fade-in');
+      }
+    }
+
+    function handleSelect(selectedIndex) {
+      if (userAnswers[currentQuestion] !== null) return;
+
+      userAnswers[currentQuestion] = selectedIndex;
+
+      if (selectedIndex === quizData[currentQuestion].correct) {
+        score++;
+        scoreDisplay.innerText = score;
+      }
+
+      saveQuizState(); // Simpan progress setelah menjawab
+      loadQuestion();
+
+      setTimeout(() => {
+        explanationBox.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      }, 100);
+    }
+
+    function nextQuestion() {
+      if (currentQuestion < quizData.length - 1) {
+        currentQuestion++;
+        saveQuizState(); // Simpan halaman / state
+        loadQuestion();
+      } else {
+        showResult();
+      }
+    }
+
+    function prevQuestion() {
+      if (currentQuestion > 0) {
+        currentQuestion--;
+        saveQuizState(); // Simpan halaman / state
+        loadQuestion();
+      }
+    }
+
+    function showResult() {
+      quizScreen.classList.add('hidden');
+      quizScreen.classList.remove('flex');
+      resultScreen.classList.remove('hidden');
+
+      const finalScoreEl = document.getElementById('final-score');
+      const finalPercentageEl = document.getElementById('final-percentage');
+      const feedbackEl = document.getElementById('feedback-message');
+
+      const total = quizData.length;
+      const percentage = Math.round((score / total) * 100);
+
+      finalScoreEl.innerText = score;
+      finalPercentageEl.innerText = `Anda menjawab benar ${score} dari ${total} soal`;
+
+      if (percentage >= 90) {
+        feedbackEl.innerText = "Luar Biasa! Level Anda: Ahli Konservasi. 🌿👑";
+        feedbackEl.className = "mt-4 text-lg font-bold text-emerald-600";
+      } else if (percentage >= 70) {
+        feedbackEl.innerText = "Sangat Baik! Anda memiliki pemahaman NKT yang kuat. 🌲";
+        feedbackEl.className = "mt-4 text-lg font-bold text-green-600";
+      } else if (percentage >= 50) {
+        feedbackEl.innerText = "Cukup Baik. Anda punya dasar, tapi beberapa konsep NKT perlu diulas lagi. 🌱";
+        feedbackEl.className = "mt-4 text-lg font-bold text-yellow-600";
+      } else {
+        feedbackEl.innerText = "Terus Belajar! Silakan baca ulang materi PDF perlindungan areal konservasi. 🍂";
+        feedbackEl.className = "mt-4 text-lg font-bold text-red-500";
+      }
+
+      // Hapus progress save jika sudah selesai untuk mencegah loop aneh
+      localStorage.removeItem('quizSavedState');
+    }
+
+    function resetQuiz() {
+      resultScreen.classList.add('hidden');
+      startScreen.classList.remove('hidden');
+      nextBtn.innerHTML = '<span>Selanjutnya</span> <i class="fas fa-arrow-right"></i>';
+      nextBtn.classList.remove('bg-gray-800', 'hover:bg-gray-900');
+    }
+
+  </script>
+</body>
+
+</html>
